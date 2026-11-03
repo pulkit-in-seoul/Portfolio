@@ -25,7 +25,7 @@ export const personalData = {
     },
     {
       name: 'Email',
-      url: 'mailto:geetaishsinghrajput@gmail.com',
+      url: 'mailto:pulkitinseoul@gmail.com',
       icon: 'Mail'
     }
   ]

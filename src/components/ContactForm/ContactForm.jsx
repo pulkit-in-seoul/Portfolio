@@ -234,7 +234,7 @@ export default function ContactForm() {
         </button>
 
         <p className="contact-form__privacy-note">
-          Delivered directly to: <strong>geetaishsinghrajput@gmail.com</strong>
+          Delivered directly to: <strong>pulkitinseoul@gmail.com</strong>
         </p>
       </form>
     </div>

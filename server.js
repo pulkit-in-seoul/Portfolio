@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import nodemailer from 'nodemailer';
-import { resolve } from 'node:path';
+import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const app = express();
@@ -147,6 +147,8 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Contact API endpoint not found.' }));
+
 app.use((error, _req, res, _next) => {
   console.error('Contact API request failed:', error);
   const status = error.status === 413 ? 413 : 400;
@@ -157,8 +159,24 @@ app.use((error, _req, res, _next) => {
 
 if (!apiOnly) {
   const distDirectory = resolve(projectDirectory, 'dist');
-  app.use(express.static(distDirectory));
-  app.get(/.*/, (_req, res) => res.sendFile(resolve(distDirectory, 'index.html')));
+  const assetsDirectory = resolve(distDirectory, 'assets') + sep;
+
+  app.use(
+    express.static(distDirectory, {
+      setHeaders(res, filePath) {
+        if (filePath === resolve(distDirectory, 'index.html')) {
+          res.setHeader('Cache-Control', 'no-store');
+        } else if (filePath.startsWith(assetsDirectory)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
+  app.use('/assets', (_req, res) => res.status(404).type('text/plain').send('Asset not found.'));
+  app.get(/.*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(resolve(distDirectory, 'index.html'));
+  });
 }
 
 app.listen(port, () => {

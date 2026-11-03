@@ -59,7 +59,7 @@ export default function Hero() {
                 <Instagram size={20} aria-hidden="true" />
               </a>
               <a
-                href="mailto:geetaishsinghrajput@gmail.com"
+                href="mailto:pulkitinseoul@gmail.com"
                 className="hero__social-link"
                 aria-label="Email Pulkit Mittal"
               >

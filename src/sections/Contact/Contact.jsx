@@ -33,8 +33,8 @@ export default function Contact({ sectionId = 'contact' }) {
                 </div>
                 <div>
                   <span className="contact__item-label">Direct Email</span>
-                  <a href="mailto:geetaishsinghrajput@gmail.com" className="contact__item-value">
-                    geetaishsinghrajput@gmail.com
+                  <a href="mailto:pulkitinseoul@gmail.com" className="contact__item-value">
+                    pulkitinseoul@gmail.com
                   </a>
                 </div>
               </div>
