@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -58,32 +58,23 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'Please check the form fields and try again.' });
   }
 
-  const senderAddress = process.env.EMAIL;
-  const senderPassword = process.env.EMAIL_PASS;
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const senderAddress = process.env.RESEND_FROM_EMAIL;
 
-  if (!senderAddress || !senderPassword) {
+  if (!resendApiKey || !senderAddress) {
     return res.status(503).json({ error: 'Email delivery is not configured on the server yet.' });
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: senderAddress,
-        pass: senderPassword,
-      },
-    });
+    const resend = new Resend(resendApiKey);
 
     const safeName = escapeHtml(fullName.trim());
     const safeEmail = escapeHtml(email.trim());
     const safeSubject = escapeHtml(subject.trim());
     const safeMessage = escapeHtml(message.trim());
 
-    const delivery = await transporter.sendMail({
-      from: {
-        name: 'Pulkit Mittal',
-        address: senderAddress,
-      },
+    const { data, error } = await resend.emails.send({
+      from: senderAddress,
       to: process.env.CONTACT_EMAIL || senderAddress,
       replyTo: email.trim(),
       subject: `Portfolio contact: ${subject.trim().replace(/[\r\n]+/g, ' ')}`,
@@ -136,8 +127,9 @@ app.post('/api/contact', async (req, res) => {
       `,
     });
 
-    if (delivery.accepted.length === 0) {
-      throw new Error('The mail provider did not accept the message.');
+    if (error || !data?.id) {
+      console.error('Contact email delivery failed:', error || 'Resend returned no email ID.');
+      return res.status(502).json({ error: 'We could not send your message. Please try again later.' });
     }
 
     return res.status(200).json({ message: 'Your message was sent successfully.' });
