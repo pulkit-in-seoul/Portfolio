@@ -30,16 +30,14 @@ app.use('/api', (req, res, next) => {
     return res.status(403).json({ error: 'This website is not allowed to use the contact API.' });
   }
 
-  if (origin && frontendOrigin) {
+  if (frontendOrigin) {
     res.setHeader('Access-Control-Allow-Origin', frontendOrigin);
     res.setHeader('Vary', 'Origin');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
 
   if (req.method === 'OPTIONS') {
-    if (!frontendOrigin || origin !== frontendOrigin) {
-      return res.status(403).json({ error: 'Cross-origin contact requests are not configured.' });
-    }
-
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
@@ -89,7 +87,9 @@ app.post('/api/contact', async (req, res) => {
 
   if (!resendApiKey || !senderAddress || !contactEmail) {
     console.error('Contact email delivery is missing RESEND_API_KEY, RESEND_FROM_EMAIL, or CONTACT_EMAIL.');
-    return res.status(503).json({ error: 'Email delivery is not configured on the server yet.' });
+    return res.status(503).json({
+      error: 'Email delivery is not configured. Set RESEND_API_KEY, RESEND_FROM_EMAIL, and CONTACT_EMAIL in the backend environment.',
+    });
   }
 
   try {

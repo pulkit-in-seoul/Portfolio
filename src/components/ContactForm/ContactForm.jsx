@@ -79,8 +79,15 @@ export default function ContactForm() {
     setStatusMessage('');
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '');
-      const response = await fetch(`${apiBaseUrl || ''}/api/contact`, {
+      const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, '');
+      const apiEndpoint = !configuredApiUrl
+        ? '/api/contact'
+        : /\/api\/contact$/i.test(configuredApiUrl)
+          ? configuredApiUrl
+          : /\/api$/i.test(configuredApiUrl)
+            ? `${configuredApiUrl}/contact`
+            : `${configuredApiUrl}/api/contact`;
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -108,8 +115,14 @@ export default function ContactForm() {
         );
       }
 
+      if (typeof result?.error === 'string') {
+        throw new Error(result.error);
+      }
+
       if (typeof result?.message !== 'string') {
-        throw new Error('Email server returned an invalid response. Please try again later.');
+        throw new Error(
+          'The contact API responded, but did not confirm delivery. Set VITE_API_URL to this project’s Express backend URL and redeploy the frontend.'
+        );
       }
 
       setStatus('success');
