@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './ContactForm.scss';
 import './ContactForm.media.scss';
 
@@ -28,6 +28,7 @@ export default function ContactForm() {
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const isSubmitting = useRef(false);
 
   const validate = () => {
     const newErrors = {};
@@ -70,24 +71,35 @@ export default function ContactForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     if (!validate()) return;
 
+    isSubmitting.current = true;
     setStatus('loading');
     setStatusMessage('');
 
     try {
-      const response = await fetch('/api/contact', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '');
+      const response = await fetch(`${apiBaseUrl || ''}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      const responseBody = await response.text();
-      let result = null;
+      const contentType = response.headers.get('content-type') || '';
 
+      if (!contentType.includes('application/json')) {
+        throw new Error(
+          response.ok
+            ? 'The email server returned an unexpected response. Check VITE_API_URL and confirm the Render backend is running.'
+            : `Email server returned an error (${response.status}). Please try again later.`
+        );
+      }
+
+      let result;
       try {
-        result = responseBody ? JSON.parse(responseBody) : null;
+        result = await response.json();
       } catch {
-        result = null;
+        throw new Error('The email server returned invalid JSON. Please try again later.');
       }
 
       if (!response.ok) {
@@ -108,9 +120,11 @@ export default function ContactForm() {
       setStatus('error');
       setStatusMessage(
         error instanceof TypeError
-          ? 'Could not reach the email server. Please try again later.'
+          ? 'Could not reach the email server. Check VITE_API_URL and the backend CORS configuration.'
           : error.message
       );
+    } finally {
+      isSubmitting.current = false;
     }
   };
 
@@ -234,7 +248,7 @@ export default function ContactForm() {
         </button>
 
         <p className="contact-form__privacy-note">
-          Delivered directly to: <strong>pulkitinseoul@gmail.com</strong>
+          Delivered directly to my inbox.
         </p>
       </form>
     </div>

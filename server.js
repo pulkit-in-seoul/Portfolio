@@ -8,6 +8,7 @@ const app = express();
 const port = Number(process.env.PORT) || 3001;
 const apiOnly = process.argv.includes('--api-only');
 const projectDirectory = fileURLToPath(new URL('.', import.meta.url));
+const frontendOrigin = process.env.FRONTEND_ORIGIN?.replace(/\/+$/, '');
 const requestsByIp = new Map();
 const rateLimitWindowMs = 15 * 60 * 1000;
 const rateLimitMaxRequests = 5;
@@ -22,6 +23,30 @@ const escapeHtml = (value) =>
   })[character]);
 
 app.disable('x-powered-by');
+app.use('/api', (req, res, next) => {
+  const origin = req.get('origin');
+
+  if (origin && frontendOrigin && origin !== frontendOrigin) {
+    return res.status(403).json({ error: 'This website is not allowed to use the contact API.' });
+  }
+
+  if (origin && frontendOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', frontendOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
+
+  if (req.method === 'OPTIONS') {
+    if (!frontendOrigin || origin !== frontendOrigin) {
+      return res.status(403).json({ error: 'Cross-origin contact requests are not configured.' });
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(204).end();
+  }
+
+  return next();
+});
 app.use(express.json({ limit: '10kb' }));
 
 app.post('/api/contact', async (req, res) => {
@@ -60,8 +85,10 @@ app.post('/api/contact', async (req, res) => {
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const senderAddress = process.env.RESEND_FROM_EMAIL;
+  const contactEmail = process.env.CONTACT_EMAIL;
 
-  if (!resendApiKey || !senderAddress) {
+  if (!resendApiKey || !senderAddress || !contactEmail) {
+    console.error('Contact email delivery is missing RESEND_API_KEY, RESEND_FROM_EMAIL, or CONTACT_EMAIL.');
     return res.status(503).json({ error: 'Email delivery is not configured on the server yet.' });
   }
 
@@ -75,7 +102,7 @@ app.post('/api/contact', async (req, res) => {
 
     const { data, error } = await resend.emails.send({
       from: senderAddress,
-      to: process.env.CONTACT_EMAIL || senderAddress,
+      to: contactEmail,
       replyTo: email.trim(),
       subject: `Portfolio contact: ${subject.trim().replace(/[\r\n]+/g, ' ')}`,
       text: [
@@ -142,7 +169,7 @@ app.post('/api/contact', async (req, res) => {
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Contact API endpoint not found.' }));
 
 app.use((error, _req, res, _next) => {
-  console.error('Contact API request failed:', error);
+  console.error('Contact API request failed:', error?.message || 'Unknown request error.');
   const status = error.status === 413 ? 413 : 400;
   return res.status(status).json({
     error: status === 413 ? 'The submitted form is too large.' : 'Invalid request. Please try again.',
