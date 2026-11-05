@@ -2,8 +2,8 @@ import React from 'react';
 import { Award, Code2, HeartHandshake, MapPin, Rocket, Sparkles } from 'lucide-react';
 import { personalData } from '../../data/personal.js';
 import SectionTitle from '../common/SectionTitle/SectionTitle.jsx';
-import profileImg from '../../assets/images/profile.jpeg';
-import profileWebp from '../../assets/images/profile.webp';
+import profileImg from '../../assets/images/profile-about.jpeg';
+import profileWebp from '../../assets/images/profile-about.webp';
 import './About.scss';
 
 const bio = [
@@ -64,8 +64,8 @@ const About = ({ sectionId = 'about' }) => (
                 src={profileImg}
                 alt={personalData.name}
                 className="about__photo-img"
-                width="823"
-                height="810"
+                width="768"
+                height="1024"
                 loading="lazy"
                 decoding="async"
               />

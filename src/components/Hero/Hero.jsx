@@ -19,8 +19,8 @@ export default function Hero() {
                   src={profileImg}
                   alt="Pulkit Mittal"
                   className="hero__profile-img"
-                  width="823"
-                  height="810"
+                  width="768"
+                  height="1024"
                   fetchPriority="high"
                   decoding="async"
                 />
